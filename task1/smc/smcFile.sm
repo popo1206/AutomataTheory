@@ -1,0 +1,89 @@
+
+%start MainMap::Start
+%class AppClass
+
+%map MainMap
+%%
+
+Default {
+Start           Start       {ClearSMC();}
+Unknown         Error       { Unacceptable(); }
+EOS             Error       { Unacceptable();}
+Letter          Error       { Unacceptable(); }
+Digit           Error       { Unacceptable(); }
+SpaceSym        Error       { Unacceptable(); }
+CommaSym        Error       { Unacceptable(); }
+ColonSym        Error       { Unacceptable();}
+AtSignSym         Error       {Unacceptable();}
+PointSym    Error       {Unacceptable();}
+}
+
+Start {
+Letter [ctxt.isLess6()]   nil     {  LengthInc(); }
+Letter                 Error      { Unacceptable();}
+ColonSym[ctxt.isMailto()]  Colon { LengthZero();}
+}
+
+Colon {
+Letter   Name_User     { LengthInc();makeName();}
+Digit    Name_User     {LengthInc();makeName();}
+
+}
+
+
+Name_User {
+
+    Letter [ ctxt.isLess20() ]          nil     {LengthInc();  makeName();}
+    Letter                 Error      { Unacceptable();}
+    Digit [ctxt.isLess20()]               nil     {LengthInc(); makeName();}
+    Digit           Error      { Unacceptable();}
+    AtSignSym    AtSign      {LengthZero(); AddName(); }
+
+
+}
+
+AtSign{
+
+    Letter         Name_Server           {LengthInc();}
+    Digit          Name_Server           {LengthInc();}
+
+
+}
+
+Name_Server{
+
+Letter [ ctxt.isLess20() ]      nil     {LengthInc();}
+    Letter                 Error      { Unacceptable();}
+    Digit [ctxt.isLess20()]         nil     {LengthInc();}
+    Digit               Error      { Unacceptable();}
+    PointSym  Point   {LengthZero();}
+
+
+}
+Point {
+    Letter      Name_Zone     {LengthInc();}
+}
+
+Name_Zone{
+Letter[ ctxt.isLess5() ]      nil     {LengthInc();}
+Letter                 Error      { Unacceptable();}
+EOS    OK      {Acceptable(); LengthZero(); PutInDec(); ClearMass();}
+CommaSym  Comma     {LengthZero();}
+}
+
+Comma{
+
+SpaceSym    Space          {}
+}
+Space {
+Letter         Name_User          {LengthInc();makeName();}
+Digit          Name_User       {LengthInc();makeName();}
+}
+Error {
+EOS         nil             { Unacceptable();ClearMass(); }
+}
+
+OK {
+EOS         nil             { Acceptable(); }
+}
+%%
