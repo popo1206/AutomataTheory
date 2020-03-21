@@ -118,7 +118,6 @@ if __name__ == '__main__':
         f.close()
         lexer = Lexer()
         lexer.input(add)
-        # lexer.input('MAilTO:eanm89140@ssDUwdpcJCpUnAyOQEBwuirJMQoXYS.YEjDwjHGxqvSoTjtOLLrzdjPuuMFJdiMZpnfatGPCcBqSLLUqUnzPTyayVxH?subject=21710341519738066704318859566987860891621791630985757978783218')
         while True:
             tok = lexer.token()
             print(tok)
