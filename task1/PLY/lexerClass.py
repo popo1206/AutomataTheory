@@ -112,16 +112,4 @@ class Lexer():
         print("Illegal character in ZONE'%s'" % t.value[0])
         t.lexer.begin('INITIAL')
 
-if __name__ == '__main__':
-        f = open('task1.txt', 'r')
-        add = f.read()
-        f.close()
-        lexer = Lexer()
-        lexer.input(add)
-        while True:
-            tok = lexer.token()
-            print(tok)
-            if not tok:
-                break
-
 
