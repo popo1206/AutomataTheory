@@ -30,6 +30,8 @@ class RegularExp:
                 self._res.write(i)
                 if self._dict.get(match.group('name_user')) is None:
                     self._dict[match.group('name_user')]=1
+                else:
+                    self._dict[match.group('name_user')] += 1
                 for k in mass:
                     if self._dict.get(k) is None:
                         self._dict[k] = 1
@@ -38,6 +40,7 @@ class RegularExp:
 
     def checkStringConcole(self,i):
         i=i+'\n'
+        flag=False
         match = re.fullmatch(self._regex, i)
         if match is not None:
             mass = re.split(self._helpreg, i.rstrip())
@@ -45,14 +48,18 @@ class RegularExp:
             if len(mass) > 0:
                 hh = mass[len(mass) - 1].split('@')
                 mass[len(mass) - 1] = hh[0]
-            self._res.write(i)
+            flag=True
             if self._dict.get(match.group('name_user')) is None:
                 self._dict[match.group('name_user')] = 1
+            else:
+                self._dict[match.group('name_user')] += 1
             for k in mass:
                 if self._dict.get(k) is None:
                     self._dict[k] = 1
                 else:
                     self._dict[k] += 1
+        return flag
+
     def saveDict(self):
         for i in self._dict:
             self._stat.write(i + '=' + str(self._dict[i]) + '\n')

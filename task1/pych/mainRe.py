@@ -19,13 +19,17 @@ if __name__ == '__main__':
         rr.checkStringFile()
         n2 = time.perf_counter()
         print('time:',n2-n1)
+        rr.saveDict()
     if (n==2):
         n1 = time.perf_counter()
         while True:
             print("Input string:(for exit enter exit)")
             string=input()
             if string!='exit':
-                rr.checkStringConcole(string)
+               if rr.checkStringConcole(string):
+                   print('ok')
+               else:
+                    print('none')
             else:
                 break
-    rr.saveDict()
+        print(rr._dict)
