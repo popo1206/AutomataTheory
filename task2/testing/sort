@@ -1,0 +1,28 @@
+value sort(pointer A,N)
+{
+    pointer start=A;
+    value i=0;
+    value j=N-2;
+    value c;
+        while (i<=N-1){
+            while  (j>=i){
+                notzero(*(A+j)>*(A+j+1)){
+                    c=*(A+j);
+                    *(A+j)=*(A+j+1);
+                    *(A+j+1)=c;
+                    }
+                j=j-1;
+            }
+            i=i+1;
+        }
+    return 1;
+}
+
+value main()
+{
+    value n;
+    array of //задание массива?
+pointer A=&A[0];
+    n=sort(&A[0],оператор получение размера?);
+    return 1;
+}
