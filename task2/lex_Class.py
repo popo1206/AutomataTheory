@@ -4,7 +4,6 @@ import ply.lex as lex
 class Lexer():
     def __init__(self):
         self.lexer=lex.lex(module=self)
-    states=()
     tokens=(
         'VALUE', 'ARRAYOF', 'WHILE', 'FINISH', 'POINTER','NAME',
         'CONST','COMMA','SIZEOF','NL','PLUS','MINUS','STAR','ASSIGNMENT',
