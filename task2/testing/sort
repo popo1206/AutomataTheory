@@ -23,7 +23,6 @@ value main()
     array of value A;
 	A[0]=1;
 	A[1]=5;
-	pointer A=&A[0];
     n=sort(&A[0],sizeof(A));
     return 1;
 }
