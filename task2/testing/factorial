@@ -1,11 +1,11 @@
 value factorial (value a)
 {
-    notzero(a){
+    notzero? (a){
         value b=a-1;
         a=a*factorail(b)
         return a;
     }
-    zero(a)
+    zero? (a)
         return 1;
 
 }
