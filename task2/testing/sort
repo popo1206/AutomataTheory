@@ -1,4 +1,4 @@
-value sort(pointer A,value N)
+value sort(pointer array of A,value N)
 {
     value i=0;
     value j=N-2;
