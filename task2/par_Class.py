@@ -1,4 +1,4 @@
-from __future__ import annotations
+#from __future__ import annotations
 import ply.yacc as yacc
 from lex_Class import Lexer
 from ply.lex import LexError
@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple
 
 
 class SyntaxTreeNode:
-    def __init__(self, _type='const', value=None, children=None, lineno=None):
+    def __init__(self, _type='', value=None, children=None, lineno=None):
         self.type = _type
         self.value = value
         self.children = children or []
@@ -15,7 +15,7 @@ class SyntaxTreeNode:
 
     def __repr__(self):
 
-        return f"""{self.type} {self.value or ''} {self.lineno or ''}"""
+        return f"""{self.type}: {self.value or ''} {self.lineno or ''}"""
 
     def print_(self, level: int = 0):
         print(' ' * level, self)
@@ -23,7 +23,7 @@ class SyntaxTreeNode:
     def print(self, level: int = 0):
         if self is None:
             return
-        print(' ' * level, self)
+        print('->' * level, self)
         if isinstance(self.children, list):
             for child in self.children:
                 if child:
@@ -32,7 +32,7 @@ class SyntaxTreeNode:
             self.children.print(level + 1)
         elif isinstance(self.children, dict):
             for key, value in self.children.items():
-                print(' ' * (level + 1), key)
+                print('->' * (level + 1), key)
                 if value:
                     value.print(level + 2)
 
@@ -43,14 +43,14 @@ class Parser():
     precedence = (
         ('nonassoc', 'NOTLESS', 'NOTGREATER', 'NOTEQ'),
         ('left', 'PLUS', 'MINUS'),
-        ('left', 'PERCENT', 'SLASH'),
+        ('left', 'PERCENT', 'SLASH','STAR',),
         ('left', 'ASSIGNMENT'),
-        ('right','STAR','AMPERSAND')
+        ('right','AMPERSAND')
     )
 
     def __init__(self):
         self._lexer = Lexer()
-        self.parser = yacc.yacc(module=self, debug=False)
+        self.parser = yacc.yacc(module=self)
         self.functions: Dict[str, SyntaxTreeNode] = dict()
         self.ok=True
 
@@ -77,7 +77,7 @@ class Parser():
         '''stategroup :  stategroup statement
                     | statement'''
         if len(p) == 2:
-            p[0] = SyntaxTreeNode('statement', children=[p[1]])
+            p[0] = SyntaxTreeNode('stategroup', children=[p[1]])
         else:
             p[0] = SyntaxTreeNode('stategroup', children=[p[1], p[2]])
 
@@ -137,7 +137,7 @@ class Parser():
 
     def p_assignment_var(self, p):
         '''assignment_var : variable ASSIGNMENT expression'''
-        p[0] = SyntaxTreeNode('assignment',value=p[1], children=p[3],lineno=p.lineno(1))
+        p[0] = SyntaxTreeNode('assignment',children=[p[1],p[3]],lineno=p.lineno(1))
 
     def p_assignment(self,p):
         '''assignment : assignment_var
@@ -196,7 +196,7 @@ class Parser():
         | CONST ARRAYOF expr_type
         '''
         if len(p)==2 :
-            p[0] = SyntaxTreeNode('type', value=p[1])
+            p[0] = SyntaxTreeNode('type', value=p[1],lineno=p.lineno(1))
         elif (len(p)==3 and p[1]=='const'):
             p[0] = SyntaxTreeNode('type', value=p[1]+' '+p[2])
 
@@ -207,7 +207,7 @@ class Parser():
             p[0] = SyntaxTreeNode('type', value=p[1]+' '+p[2], children=p[3])
 
         elif len(p) == 5:
-            p[0] = SyntaxTreeNode('type', value=p[1]+' '+p[2]+' '+p[3], children=[p[4]])
+            p[0] = SyntaxTreeNode('type', value=p[1]+' '+p[2]+' '+p[3], children=p[4])
 
 
 
@@ -220,9 +220,9 @@ class Parser():
         | ARRAYOF expr_type
         '''
         if len(p)==2:
-            p[0] = SyntaxTreeNode('value', lineno=p.lineno(1))
+            p[0] = SyntaxTreeNode('type',value=p[1],lineno=p.lineno(1))
         elif len(p)==3:
-            p[0] = SyntaxTreeNode('type', value=p[1],children=[p[2]], lineno=p.lineno(1))
+            p[0] = SyntaxTreeNode('type', value=p[1],children=p[2], lineno=p.lineno(1))
 
 
 
@@ -376,18 +376,18 @@ class Parser():
 
 
 
+if __name__ == '__main__':
+    parser = Parser()
+    f=open('sort','r')
+    txt=f.read()
+    f.close()
+    tree, functions,ok = parser.parse(txt)
 
-parser = Parser()
-f=open('sort','r')
-txt=f.read()
-f.close()
-tree, functions,ok = parser.parse(txt)
-
-if tree is not None and ok is True:
-    tree.print()
-    print(functions)
-else:
-    print('error tree built')
+    if tree is not None and ok is True:
+        tree.print()
+        print(functions)
+    else:
+        print('error tree built')
 
 
 
