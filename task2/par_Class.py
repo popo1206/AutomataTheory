@@ -51,7 +51,7 @@ class Parser():
     def __init__(self):
         self._lexer = Lexer()
         self.parser = yacc.yacc(module=self)
-        self.functions: Dict[str, SyntaxTreeNode] = dict()
+        self.functions = dict()
         self.ok=True
 
     def parse(self, s):
@@ -90,8 +90,8 @@ class Parser():
                     | while NL
                     | zero  NL
                     | function NL
-                    | operator SEMICOLON NL
-                    | RETURN expression SEMICOLON NL
+                    | operator  NL
+                    | RETURN expression SEMICOLON
                     | empty NL'''
         if p[1]=='return':
             p[0] = SyntaxTreeNode('return', children=p[2], lineno=p.lineno(1))
@@ -99,9 +99,16 @@ class Parser():
             p[0] = p[1]
 
     def p_statement_error(self, p):
-        '''statement : error '''
+        '''statement : declaration  error
+                    | assignment error
+                    | while error
+                    | zero  error
+                    | function error
+                    | operator error
+                    | RETURN expression error'''
         p[0] = SyntaxTreeNode('error', value="Wrong statement", lineno=p.lineno(1))
         sys.stderr.write(f'>>> Syntax error\n')
+        self.ok=False
 
     # it's ok type+ some variable
     def p_declaration(self,p):
@@ -112,59 +119,59 @@ class Parser():
         """declaration : type error"""
         p[0] = SyntaxTreeNode('declaration', value=p[1], children=p[2], lineno=p.lineno(2))
         sys.stderr.write(f'>>> Wrong name of declared value\n')
+        self.ok = False
 
     def p_vars_icv(self, p):
-         '''vars : NAME COMMA vars'''
-         p[0] = SyntaxTreeNode('vars',
-                                  children=[SyntaxTreeNode('name', value=p[1], lineno=p.lineno(1)),
-                                            p[3]])
+        '''vars : NAME COMMA vars'''
+        p[0] = SyntaxTreeNode('vars',
+                              children=[SyntaxTreeNode('name', value=p[1], lineno=p.lineno(1)),
+                                        p[3]])
 
         # a=2*v, a
+
     def p_vars_acv(self, p):
-         '''vars : assignment_var COMMA vars'''
-         p[0] = SyntaxTreeNode('vars', children=[p[1], p[3]])
+        '''vars : assignment_var COMMA vars'''
+        p[0] = SyntaxTreeNode('vars', children=[p[1], p[3]])
 
         # just one or end of list variebles
+
     def p_vars_name(self, p):
         '''vars : NAME'''
         p[0] = SyntaxTreeNode('vars',
-                                 children=[SyntaxTreeNode('name', value=p[1], lineno=p.lineno(1))])
+                              children=[SyntaxTreeNode('name', value=p[1], lineno=p.lineno(1))])
 
         # same
+
     def p_vars(self, p):
-            '''vars : assignment_var '''
-            p[0] = SyntaxTreeNode('vars', children=[p[1]])
+        '''vars : assignment_var '''
+        p[0] = SyntaxTreeNode('vars', children=[p[1]])
 
     def p_assignment_var(self, p):
         '''assignment_var : variable ASSIGNMENT expression'''
-        p[0] = SyntaxTreeNode('assignment',children=[p[1],p[3]],lineno=p.lineno(1))
+        p[0] = SyntaxTreeNode('assignment', children=[p[1], p[3]], lineno=p.lineno(1))
 
-    def p_assignment(self,p):
+    def p_assignment(self, p):
         '''assignment : assignment_var
         | pointer ASSIGNMENT expression'''
-        if len(p)==2:
-            p[0]=p[1]
+        if len(p) == 2:
+            p[0] = p[1]
         else:
-            p[0] = SyntaxTreeNode('assignment', value=p[1], children=p[3], lineno=p.lineno(1))
+            p[0] = SyntaxTreeNode('assignment', children=[p[1],p[3]], lineno=p.lineno(1))
 
     def p_assignment_err(self, p):
         '''assignment : variable ASSIGNMENT error'''
         p[0] = SyntaxTreeNode('error', value="Wrong assignment", lineno=p.lineno(1))
         sys.stderr.write(f'>>> Wrong assignment\n')
 
-
-
-    def p_pointer(self,p):
+    def p_pointer(self, p):
         '''pointer : STAR NAME
                   | STAR OBRACKET expression CBRACKET
                   | AMPERSAND NAME
                   | AMPERSAND OBRACKET expression CBRACKET'''
-        if len(p)==5:
-            p[0]=SyntaxTreeNode('pointer_variable',children=p[3])
+        if len(p) == 5:
+            p[0] = SyntaxTreeNode('pointer_variable', children=p[3])
         else:
-            p[0]=SyntaxTreeNode('pointer_variable',children=[SyntaxTreeNode('name', value=p[2],lineno=p.lineno(2))])
-
-        # здесь имени переменное или обращение к массиву
+            p[0] = SyntaxTreeNode('pointer_variable', children=[SyntaxTreeNode('name', value=p[2], lineno=p.lineno(2))])
 
     def p_variable(self, p):
         '''variable : NAME
@@ -179,9 +186,9 @@ class Parser():
         """index : OSQBRACKET expression CSQBRACKET index
                     | OSQBRACKET expression CSQBRACKET"""
         if len(p) == 5:
-            p[0] = SyntaxTreeNode('index', children=[p[2], p[4]], lineno=p.lineno(2))
+            p[0] = SyntaxTreeNode('index',children=[p[2], p[4]], lineno=p.lineno(2))
         else:
-            p[0] =SyntaxTreeNode('index', children=p[2], lineno=p.lineno(2))
+            p[0] =SyntaxTreeNode('last_index',children=p[2], lineno=p.lineno(2))
 
     #different type of variable
 #чет какие то деревья понастроила хз хз шо за параша
@@ -225,20 +232,6 @@ class Parser():
             p[0] = SyntaxTreeNode('type', value=p[1],children=p[2], lineno=p.lineno(1))
 
 
-
-
-#присвоение
-
-
-
-    '''def p_expr_list(self, p):
-        expr_list : expr_list COMMA expression
-        | expression
-        if len(p) == 2:
-            p[0] = SyntaxTreeNode('expr_list', children=p[1])
-        else:
-            p[0] = SyntaxTreeNode('expr_list', children=[p[1], p[3]])'''
-
     def p_expression(self, p):  # al_expression stands for Arithmetical-Logical
         '''expression : variable
         | al_expression
@@ -279,19 +272,24 @@ class Parser():
         | RIGHT SEMICOLON
         | PORTAL SEMICOLON
         | TELEPORT SEMICOLON
-        | BREAK SEMICOLON'''
-        p[0] = SyntaxTreeNode('operator', p[1], lineno=p.lineno(1))
+        | BREAK SEMICOLON
+        | SIZEOF OBRACKET al_expression CBRACKET'''
+        if len(p)==3:
+            p[0] = SyntaxTreeNode('operator', p[1], lineno=p.lineno(1))
+        else:
+            p[0] = SyntaxTreeNode('operator', p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+
 
     def p_while_finish(self, p):
         '''while : while FINISH OFBRACKET  NL stategroup  CFBRACKET'''
 
-        p[0] = SyntaxTreeNode('while', children={'while':p[1],'finish': p[5]},lineno=p.lineno(1))
+        p[0] = SyntaxTreeNode('while_finish', children={'while':p[1],'finish': p[5]},lineno=p.lineno(1))
 
 
 
     def p_while(self, p):
         '''while : WHILE OBRACKET expression CBRACKET  OFBRACKET  NL stategroup  CFBRACKET'''
-        p[0] = SyntaxTreeNode('while', children={'condition': p[3], 'body': p[7], 'finish': None}, lineno=p.lineno(1))
+        p[0] = SyntaxTreeNode('while', children={'condition': p[3], 'body': p[7]}, lineno=p.lineno(1))
 
 
 
@@ -316,54 +314,47 @@ class Parser():
         else:
 
             if len(p)==10:
-                p[0] = SyntaxTreeNode('function_description', value=p[2],
-                                      children={'type':p[1], 'parametrs': p[4],'body': p[8]}, lineno=p.lineno(2))
+                self.functions[p[2]]=SyntaxTreeNode('function', children={'type':p[1], 'parametrs': p[4],'body': p[8]})
+                p[0]=  SyntaxTreeNode('function_description', value=p[2])
             elif len(p)==9:
-                p[0] = SyntaxTreeNode('function_description', value=p[2],
-                                      children={'type': p[1], 'parametrs': None, 'body': p[7]}, lineno=p.lineno(2))
-            self.functions[p[2]] = p[0]
+                self.functions[p[2]]=SyntaxTreeNode('function', children={'type': p[1], 'parametrs': None, 'body': p[7]})
+                p[0]=SyntaxTreeNode('function_description', value=p[2])
 
 
 
     def p_funcname(self, p):
         '''funcname : MAIN
                      | NAME'''
-        p[0] = SyntaxTreeNode('funcname', value=p[1], lineno=p.lineno(1))
+        p[0] = p[1]
 
     def p_function_call(self, p):
         'function_call : NAME OBRACKET call_parameters CBRACKET '
         p[0] = SyntaxTreeNode('function_call', p[1], children={'parametrs':p[3]}, lineno=p.lineno(1),)
 
     def p_call_parameters(self,p):
-       '''call_parameters : call_parameters COMMA call_vars
-                | call_vars'''
+       '''call_parameters : call_parameters COMMA expression
+                | expression'''
        if len(p) == 2:
-           p[0] = SyntaxTreeNode('call parameters', children=[p[1]], lineno=p.lineno(1))
+           p[0] = SyntaxTreeNode('call parameters', children=p[1], lineno=p.lineno(1))
        elif len(p) == 4:
            p[0] = SyntaxTreeNode('call parameters', children=[p[1], p[3]], lineno=p.lineno(1))
 
-    def p_call_vars(self, p):
-        '''call_vars : vars
-                 | expression'''
-        p[0] = p[1]
 
-    def p_function_error(self, p):
-        """function : type error"""
-        p[0] = SyntaxTreeNode('error', value="Wrong function name", lineno=p.lineno(2))
-        sys.stderr.write(f'>>> Wrong function name at {p.lineno(2)} line\\n')
+
+
 
     def p_parameters(self,p):
         """parameters : parameters COMMA parameter
                       | parameter"""
         if len(p) == 2:
-            p[0] = SyntaxTreeNode(children=[p[1]], lineno=p.lineno(1))
-        elif len(p) == 4:
-            p[0] = SyntaxTreeNode( children=[p[1], p[3]], lineno=p.lineno(1))
+            p[0] = SyntaxTreeNode('parameters',children=[p[1]])
+        else:
+            p[0] = SyntaxTreeNode('parameters', children=[p[1], p[3]])
 
 
     def p_parameter(self,p):
         """parameter : type NAME"""
-        p[0] = SyntaxTreeNode('parameter', value=p[2], children=p[1], lineno=p.lineno(2))
+        p[0] = SyntaxTreeNode('parameter',value=p[2],children=p[1])
 
     def p_empty(self, p):
         'empty : '
@@ -373,6 +364,7 @@ class Parser():
     def p_error(self,p):
         if not p:
             print(f'Syntax error at {p.lineno} line\n')
+            self.ok = False
 
 
 
@@ -386,6 +378,8 @@ if __name__ == '__main__':
     if tree is not None and ok is True:
         tree.print()
         print(functions)
+        functions['main'].print()
+        functions['factorial'].print()
     else:
         print('error tree built')
 
