@@ -359,9 +359,12 @@ class MyInterpreter:
         flag=True
         tab=None
         if variable.type=='pointer_variable':
-            var=self.interpreter_node(variable.children)
+            if variable.children.type!='name':
+                var=self.interpreter_node(variable.children)
+            else:
+                var=self.symbol_table[self.scope][variable.children.value]
             exp=self.interpreter_node(expression)
-            self.symbol_table[var.level][var.value].value[var.index]=exp
+            self.symbol_table[var.level][var.value].value[var.index]=copy.copy(exp)
             return
         elif variable.type=='index':
             if variable.value.value in self.symbol_table[self.scope].keys():
@@ -406,7 +409,9 @@ class MyInterpreter:
                     if len(tab.type)>=2:
                         if isinstance(var.value,str):
                             if (var.type==tab.type):
-                                tab=var
+                                tab.value=var.value
+                                tab.level=var.level
+                                tab.index=var.index
                             else:
                                 sys.stderr.write('Type Error Assign\n')
                                 raise Exit
@@ -419,7 +424,7 @@ class MyInterpreter:
                                 raise Exit
                     else:
                         if len(tab.type)==1:
-                            tab.value = var.value
+                            tab.value = copy.copy(var.value)
 
 
                 elif (var._type()=='Value') and (tab._type()=='Value' and tab.write==True):
@@ -498,36 +503,42 @@ class MyInterpreter:
 
 
      #BINARY OPERATIONS
-    def _plus(self, exp1: SyntaxTreeNode, exp2: SyntaxTreeNode):
+    def _plus(self, exp1: SyntaxTreeNode or Value, exp2: SyntaxTreeNode or Value):
         type1=''
         type2=''
         val1=0
         val2=0
-        if exp1.type=='name':
-            if self.symbol_table[self.scope][exp1.value].value!=None:
-                type1=self.symbol_table[self.scope][exp1.value]._type()
-                val1=self.symbol_table[self.scope][exp1.value].value
-            else:
-                sys.stderr.write(f'Illigial operation: var  {exp1.value} does not have value\n')
-                self.flagOperation=False
-                return Value('num',1)
-        elif exp1.type=='num':
-            type1='num'
-            val1=exp1.value
+        if isinstance(exp1,SyntaxTreeNode):
+            if exp1.type=='name':
+                if self.symbol_table[self.scope][exp1.value].value!=None:
+                    type1=self.symbol_table[self.scope][exp1.value]._type()
+                    val1=self.symbol_table[self.scope][exp1.value].value
+                    exp1=self.symbol_table[self.scope][exp1.value]
+                else:
+                    sys.stderr.write(f'Illigial operation: var  {exp1.value} does not have value\n')
+                    self.flagOperation=False
+                    return Value('num',1)
+            elif exp1.type=='num':
+                type1='num'
+                val1=exp1.value
+                exp1=Value(type1,val1)
         else:
             type1 = exp1._type()
             val1 = exp1.value
-        if exp2.type=='name':
-            if self.symbol_table[self.scope][exp2.value].value != None:
-                type2 = self.symbol_table[self.scope][exp2.value]._type()
-                val2 = self.symbol_table[self.scope][exp2.value].value
-            else:
-                sys.stderr.write(f'Illigial operation: var  {exp2.value} does not have value\n')
-                self.flagOperation = False
-                return Value('num', 1)
-        elif exp2.type=='num':
-            type2='num'
-            val2=exp2.value
+        if isinstance(exp2,SyntaxTreeNode):
+            if exp2.type=='name':
+                if self.symbol_table[self.scope][exp2.value].value != None:
+                    type2 = self.symbol_table[self.scope][exp2.value]._type()
+                    val2 = self.symbol_table[self.scope][exp2.value].value
+                    exp2=self.symbol_table[self.scope][exp2.value]
+                else:
+                    sys.stderr.write(f'Illigial operation: var  {exp2.value} does not have value\n')
+                    self.flagOperation = False
+                    return Value('num', 1)
+            elif exp2.type=='num':
+                type2='num'
+                val2=exp2.value
+                exp2=Value(type2,val2)
         else:
             type2=exp2._type()
             val2=exp2.value
@@ -535,38 +546,35 @@ class MyInterpreter:
         if (type1=='Value' or type1== 'num') and  (type2=='Value' or type2=='num'):
             return Value('num',val1+val2)
         elif (type1=='pointer' and (type2=='Value' or type2=='num')):
-            if len(self.symbol_table[self.scope][exp1.value].type)>=2:
-                if self.symbol_table[self.scope][exp1.value].type[1]=='array of':
-                    val=self.symbol_table[self.scope][exp1.value].index+val2
-                    name=self.symbol_table[self.scope][exp1.value].value
-                    arr=self.symbol_table[self.symbol_table[self.scope][exp1.value].level][name]
+            if len(exp1.type)>=2:
+                if exp1.type[1]=='array of':
+                    val=exp1.index+val2
+                    arr=self.symbol_table[exp1.level][exp1.value]
                     if len(arr.value) > val:
                         ttype = copy.copy(arr.type)
                         ttype.insert(0, 'pointer')
-                        return Pointer(ttype, name, index=val)
+                        return Pointer(ttype, exp1.value, index=val)
                     else:
                         sys.stderr.write('Time error\n')
                         raise Exit
             else:
-                sys.stderr.write('Error pointer sum')
+                sys.stderr.write('Error pointer sum\n')
                 self.flagOperation=False
                 return Value('num',1)
         elif (type2=='pointer' and  (type1=='Value' or type1=='num')):
-            if len(self.symbol_table[self.scope][exp2.value].type)>=2:
-                if self.symbol_table[self.scope][exp2.value].type[1]=='array of':
-                    val = self.symbol_table[self.scope][exp2.value].index + val1
-                    name = self.symbol_table[self.scope][exp2.value].value
-                    arr = self.symbol_table[self.symbol_table[self.scope][exp2.value].level][name]
+            if len(exp2.type) >= 2:
+                if exp2.type[1] == 'array of':
+                    val = exp2.index + val2
+                    arr = self.symbol_table[exp2.level][exp2.value]
                     if len(arr.value) > val:
-                        ttype=copy.copy(arr.type)
-                        ttype.insert(0,'pointer')
-                        return Pointer(ttype, name,index=val)
+                        ttype = copy.copy(arr.type)
+                        ttype.insert(0, 'pointer')
+                        return Pointer(ttype, exp2.value, index=val)
                     else:
                         sys.stderr.write('Time error\n')
                         raise Exit
-
             else:
-                sys.stderr.write('Error pointer sum')
+                sys.stderr.write('Error pointer sum\n')
                 self.flagOperation = False
                 return Value('num', 1)
 
@@ -584,77 +592,75 @@ class MyInterpreter:
         type2 = ''
         val1 = 0
         val2 = 0
-        if exp1.type == 'name':
-            if self.symbol_table[self.scope][exp1.value].value != None:
-                type1 = self.symbol_table[self.scope][exp1.value]._type()
-                val1 = self.symbol_table[self.scope][exp1.value].value
-            else:
-                sys.stderr.write(f'Illigial operation: var  {exp1.value} does not have value\n')
-                self.flagOperation = False
-                return Value('num', 1)
-        elif exp1.type == 'num':
-            type1 = 'num'
-            val1 = exp1.value
+        if isinstance(exp1, SyntaxTreeNode):
+            if exp1.type == 'name':
+                if self.symbol_table[self.scope][exp1.value].value != None:
+                    type1 = self.symbol_table[self.scope][exp1.value]._type()
+                    val1 = self.symbol_table[self.scope][exp1.value].value
+                    exp1 = self.symbol_table[self.scope][exp1.value]
+                else:
+                    sys.stderr.write(f'Illigial operation: var  {exp1.value} does not have value\n')
+                    self.flagOperation = False
+                    return Value('num', 1)
+            elif exp1.type == 'num':
+                type1 = 'num'
+                val1 = exp1.value
+                exp1 = Value(type1, val1)
         else:
             type1 = exp1._type()
             val1 = exp1.value
-        if exp2.type == 'name':
-            if self.symbol_table[self.scope][exp2.value].value != None:
-                type2 = self.symbol_table[self.scope][exp2.value]._type()
-                val2 = self.symbol_table[self.scope][exp2.value].value
-            else:
-                sys.stderr.write(f'Illigial operation: var  {exp2.value} does not have value\n')
-                self.flagOperation = False
-                return Value('num', 1)
-        elif exp2.type == 'num':
-            type2 = 'num'
-            val2 = exp2.value
+        if isinstance(exp2, SyntaxTreeNode):
+            if exp2.type == 'name':
+                if self.symbol_table[self.scope][exp2.value].value != None:
+                    type2 = self.symbol_table[self.scope][exp2.value]._type()
+                    val2 = self.symbol_table[self.scope][exp2.value].value
+                    exp2 = self.symbol_table[self.scope][exp2.value]
+                else:
+                    sys.stderr.write(f'Illigial operation: var  {exp2.value} does not have value\n')
+                    self.flagOperation = False
+                    return Value('num', 1)
+            elif exp2.type == 'num':
+                type2 = 'num'
+                val2 = exp2.value
+                exp2 = Value(type2, val2)
         else:
             type2 = exp2._type()
             val2 = exp2.value
-        #FOR  VALUE
-        if (type1 == 'Value' or type1 == 'num') or (type2 == 'Value' or type1 == 'num'):
+
+        if (type1 == 'Value' or type1 == 'num') and (type2 == 'Value' or type2 == 'num'):
             return Value('num', val1 - val2)
-
-
-        #FOR POINTER
         elif (type1 == 'pointer' and (type2 == 'Value' or type2 == 'num')):
-            if len(self.symbol_table[self.scope][exp1.value].type) >= 2:
-                if self.symbol_table[self.scope][exp1.value].type[1] == 'array of':
-                    val = self.symbol_table[self.scope][exp1.value].index - val2
-                    name = self.symbol_table[self.scope][exp1.value].value
-                    arr = self.symbol_table[self.symbol_table[self.scope][exp1.value]][name]
+            if len(exp1.type) >= 2:
+                if exp1.type[1] == 'array of':
+                    val = exp1.index - val2
+                    arr = self.symbol_table[exp1.level][exp1.value]
                     if len(arr.value) > val:
                         ttype = copy.copy(arr.type)
                         ttype.insert(0, 'pointer')
-                        return Pointer(ttype, name, index=val)
+                        return Pointer(ttype, exp1.value, index=val)
                     else:
                         sys.stderr.write('Time error\n')
                         raise Exit
             else:
-                sys.stderr.write('Error pointer minus')
+                sys.stderr.write('Error pointer minus\n')
                 self.flagOperation = False
                 return Value('num', 1)
-
         elif (type2 == 'pointer' and (type1 == 'Value' or type1 == 'num')):
-            if len(self.symbol_table[self.scope][exp2.value].type) >= 2:
-                if self.symbol_table[self.scope][exp2.value].type[1] == 'array of':
-                    val = self.symbol_table[self.scope][exp2.value].index - val1
-                    name = self.symbol_table[self.scope][exp2.value].value
-                    arr = self.symbol_table[self.symbol_table[self.scope][exp2.value].level][name]
+            if len(exp2.type) >= 2:
+                if exp2.type[1] == 'array of':
+                    val = exp2.index - val2
+                    arr = self.symbol_table[exp2.level][exp2.value]
                     if len(arr.value) > val:
                         ttype = copy.copy(arr.type)
                         ttype.insert(0, 'pointer')
-                        return Pointer(ttype, name, index=val)
+                        return Pointer(ttype, exp2.value, index=val)
                     else:
                         sys.stderr.write('Time error\n')
                         raise Exit
-
             else:
-                sys.stderr.write('Error pointer minus')
+                sys.stderr.write('Error pointer minus\n')
                 self.flagOperation = False
                 return Value('num', 1)
-        #FOR ARRAY
 
         elif (type1 == 'Array' or type2 == 'Array'):
             sys.stderr.write(f'Cant minus with type array of\n')
@@ -822,9 +828,9 @@ class MyInterpreter:
         if  exp1._type()=='Value' and  exp2._type()=='Value':
             f=bool(exp1.value >= exp2.value)
             if f:
-                return 1
+                return Value('num',1)
             else:
-                return 0
+                return Value('num',0)
 
         else:
             sys.stderr.write('Cant compare\n')
@@ -843,9 +849,9 @@ class MyInterpreter:
         if exp1._type()=='Value' and  exp2._type()=='Value':
             f = bool(exp1.value <= exp2.value)
             if f:
-                return 1
+                return Value('num', 1)
             else:
-                return 0
+                return Value('num', 0)
         else:
             sys.stderr.write('Cant compare\n')
             return Value(value=None)
@@ -865,9 +871,9 @@ class MyInterpreter:
         if  exp1._type()=='Value' and  exp2._type()=='Value':
             f = bool(exp1.value != exp2.value)
             if f:
-                return 1
+                return Value('num', 1)
             else:
-                return 0
+                return Value('num', 0)
         else:
             sys.stderr.write('Cant compare\n')
             return Value(value=None)
@@ -906,7 +912,7 @@ class MyInterpreter:
 
         while True:
             try:
-                condition = self.interpreter_node(node.children['condition'])
+                condition = self.interpreter_node(node.children['condition']).value
                 if condition == 1:
                     self.interpreter_node(node.children['body'])
                 else:
@@ -927,12 +933,12 @@ class MyInterpreter:
     #ZERO BLOCK
     def _notzero(self, node: SyntaxTreeNode):
 
-            condition = self.interpreter_node(node.children['condition'])
+            condition = self.interpreter_node(node.children['condition']).value
             if condition != 0:
                 self.interpreter_node(node.children['body'])
 
     def _zero(self,node: SyntaxTreeNode):
-            condition = self.interpreter_node(node.children['condition'])
+            condition = self.interpreter_node(node.children['condition']).value
             if condition == 0:
                 self.interpreter_node(node.children['body'])
 
@@ -969,7 +975,8 @@ class MyInterpreter:
         if self.symbol_table[0]['#' + name] > 1000:
             self.symbol_table.pop()
             self.scope -= 1
-            raise RecursionError from None
+            sys.stderr.write('Recursion error\n')
+            raise Exit
 
         #GET PARAMETRS
         self.scope+=1
@@ -998,15 +1005,23 @@ class MyInterpreter:
         #MAKE BODY
         self.interpreter_node(func_node.children['body'])
         #CHECK RESULT
-        if self.symbol_table[self.scope]['#result']._type()==self.check_Type(func_node.children['type'].value)._type():
-            result= self.symbol_table[self.scope]['#result']
-            self.symbol_table.pop()
-            self.scope -= 1
-            return result
+        if '#result' in self.symbol_table[self.scope].keys():
+            if self.symbol_table[self.scope]['#result']._type()==self.check_Type(func_node.children['type'].value)._type():
+                result= self.symbol_table[self.scope]['#result']
+                self.symbol_table.pop()
+                self.scope -= 1
+                return result
+            else:
+                sys.stderr.write('Function call Error\n')
+                self.symbol_table.pop()
+                self.scope -= 1
+                raise Exit
         else:
             sys.stderr.write('Function call Error\n')
             self.symbol_table.pop()
             self.scope -= 1
+            raise Exit
+
 
     def _parametrs(self, node: list or SyntaxTreeNode, vars: list):
         if isinstance(node, list):
@@ -1045,7 +1060,7 @@ class MyInterpreter:
 
 
 if __name__ == '__main__':
-    f=open('check_declaration_and_assignment ','r')
+    f=open('sort','r')
     txt=f.read()
     f.close()
     #txt='value b=4;\n pointer a=&b;\nb=2;\nvalue c=*a;\n'
