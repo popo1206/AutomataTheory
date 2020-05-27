@@ -123,7 +123,9 @@ class MyInterpreter:
             try:
                 self._assignment(node)
             except IndexError:
-                raise Exit
+                pass
+            except Exit:
+                pass
 
         # for array assignment
         elif node.type == 'index':
@@ -262,7 +264,7 @@ class MyInterpreter:
 
     def _create_new_var(self, _type: [], name: str):
         if name in self.symbol_table[self.scope].keys():
-            sys.stderr.write(f'This name is already exist\n')
+            sys.stderr.write(f'This name {name} is already exist\n')
         else:
             type = copy.copy(_type)
             if _type[0] == 'value':
@@ -327,7 +329,7 @@ class MyInterpreter:
                     if self.flagOperation == True:
                         if val._type() == 'pointer':
                             if self.symbol_table[self.scope][node.children[0].value]._type() == 'pointer':
-                                self.symbol_table[self.scope][node.children[0].value] = val
+                                self.symbol_table[self.scope][node.children[0].value].value = val.value
                             else:
                                 sys.stderr.write(f'Time error\n')
                                 self.symbol_table[self.scope].pop(node.children[0].value)
@@ -350,7 +352,7 @@ class MyInterpreter:
                         and self.type[0] != ('const pointer const')):
                     self._create_new_var(self.type, node.value)
                 else:
-                    sys.stderr.write(f'Const modification need assignment')
+                    sys.stderr.write(f'Const modification need assignment\n')
 
      #ASSIGNMENT
     def _assignment(self, node: SyntaxTreeNode):
@@ -409,7 +411,7 @@ class MyInterpreter:
         elif expression.type!='num' or 'name':
             var=self.interpreter_node(expression)
             if self.flagOperation==True:
-                if var._type()=='pointer' and (tab._type()=='pointer' and tab.write==True):
+                if var._type()=='pointer' and (tab._type()=='pointer' and tab.write==True and tab.read==True):
                     if len(tab.type)>=2:
                         if isinstance(var.value,str):
                             if (var.type==tab.type):
@@ -417,14 +419,14 @@ class MyInterpreter:
                                 tab.level=var.level
                                 tab.index=var.index
                             else:
-                                sys.stderr.write('Type Error Assign\n')
+                                sys.stderr.write(f'Type Error Assign\n')
                                 raise Exit
                         else:
                             if var.type==tab.type:
                                 tab.value = var.value
                                 tab.level=var.level
                             else:
-                                sys.stderr.write('Type Error Assign\n')
+                                sys.stderr.write(f'Type Error Assign \n')
                                 raise Exit
                     else:
                         if len(tab.type)==1:
@@ -452,7 +454,7 @@ class MyInterpreter:
                 val=self._index_index(val,value)
                 return self._index(val,node.children[1])
             else:
-                sys.stderr.write(f'Index error')
+                sys.stderr.write(f'Index error\n')
                 raise IndexError
 
 
@@ -475,7 +477,7 @@ class MyInterpreter:
             if value == 0:
                 return val.value[0]  # создала массив и возвращаю присовение 0
             else:
-                sys.stderr.write(f'Index error')
+                sys.stderr.write(f'Index error\n')
                 raise IndexError
         else:
             if len(val.value) == value:
@@ -1064,7 +1066,7 @@ class MyInterpreter:
 
 
 if __name__ == '__main__':
-    f=open('factorial', 'r')
+    f=open('check_func_2', 'r')
     txt=f.read()
     f.close()
     #txt='value b=4;\n pointer a=&b;\nb=2;\nvalue c=*a;\n'

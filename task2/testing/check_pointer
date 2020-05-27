@@ -17,4 +17,7 @@ pointer pointer f;
 f=&a;
 *(a)=4;
 *(*f)=3;
+pointer const aaa;
+aaa=&b;
+const pointer const cpoint=&b;
 }

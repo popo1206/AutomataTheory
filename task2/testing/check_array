@@ -19,4 +19,10 @@ pp[0]=dd;
 array of pointer array of array of xd;
 xd[0]=&b;
 value c=a[0]*b[0][1]%b[1][1];
+
+const array of n=3;
+n[0]=1;
+n[1]=2;
+n[2]=3;
+
 }
