@@ -1,0 +1,19 @@
+value factorial (value a){
+    notzero? (a!=0){
+        return a*factorial(a-1);
+    }
+    zero? (a){
+        return 1;
+        }
+}
+
+value main(){
+	array of a;
+	a[0]=1;
+	a[1]=2;
+	a[2]=3;
+	a[3]=4;
+	foreach a factorial();
+	return 1;
+}
+

@@ -224,6 +224,8 @@ class MyInterpreter:
         elif node.type == 'parameter':
             self._createType(node.children)
             self._create_new_var(self.type,node.value)
+        elif node.type=='foreach':
+            self._foreach(node)
 
 
         # get function description
@@ -957,8 +959,20 @@ class MyInterpreter:
         except Exit:
             pass
 
+    def _foreach(self,node :SyntaxTreeNode):
+        if node.value in self.symbol_table[self.scope].keys():
+            if self.symbol_table[self.scope][node.value]._type()=='Array':
+                k=0
+                for i in self.symbol_table[self.scope][node.value].value:
+                   self.symbol_table[self.scope][node.value].value[k]=self._function_call(node.children, True, i)
+                   k+=1
+            else:
+                self.symbol_table[self.scope][node.value]=self._function_call(node.children, True, self.symbol_table[self.scope][node.value])
+        else:
+            sys.stderr.write('Error variable in foreach\n')
 
-    def _function_call(self, node: SyntaxTreeNode):
+
+    def _function_call(self, node: SyntaxTreeNode,flag=False, each=0):
         name=node.value
         func_node=None
         params =[]
@@ -972,7 +986,10 @@ class MyInterpreter:
             return
         #input parametrs
         parameters=[]
-        self._parametrs(node.children['parametrs'].children,parameters)
+        if flag==True:
+            parameters.append(each)
+        if (node.children['parametrs'] is not None):
+            self._parametrs(node.children['parametrs'].children,parameters)
         """Adding for recursion checking"""
         if '#' + name not in self.symbol_table[0].keys():
             self.symbol_table[0]['#' + name] = 1
@@ -1066,7 +1083,7 @@ class MyInterpreter:
 
 
 if __name__ == '__main__':
-    f=open('check_func_2', 'r')
+    f=open('foreach', 'r')
     txt=f.read()
     f.close()
     #txt='value b=4;\n pointer a=&b;\nb=2;\nvalue c=*a;\n'

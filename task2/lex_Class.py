@@ -7,10 +7,10 @@ class Lexer():
     tokens=(
         'VALUE', 'ARRAYOF', 'WHILE', 'FINISH', 'POINTER','NAME',
         'CONST','COMMA','SIZEOF','NL','PLUS','MINUS','STAR','ASSIGNMENT',
-        'PERCENT','OBRACKET','CBRACKET','OFBRACKET','CFBRACKET','OSQBRACKET','CSQBRACKET',
-        'AMPERSAND','ZERO','NOTZERO','FOREACH','TOP','NUMBER',
+        'PERCENT','SLASH','OBRACKET','CBRACKET','OFBRACKET','CFBRACKET','OSQBRACKET','CSQBRACKET',
+        'AMPERSAND','ZERO','NOTZERO','TOP','NUMBER',
         'BOTTOM','LEFT','RIGHT','PORTAL', 'TELEPORT','MAIN','RETURN',
-        'SEMICOLON','POINT','BREAK','NOTLESS','NOTGREATER','NOTEQ','UNKNOWN'
+        'SEMICOLON','BREAK','NOTLESS','NOTGREATER','NOTEQ','FOREACH'
 
     )
 
@@ -30,9 +30,12 @@ class Lexer():
         r'\d+'
         t.value = int(t.value)
         return t
+    def t_SLASH(self, t):
+        r'\/'
+        return t
 
     def t_ARRAYOF(self,t):
-        r'array of(?!\w)'
+        r'array\ of(?!\w)'
         return t
     def t_WHILE(self,t):
         r'while(?!\w)'
@@ -112,6 +115,7 @@ class Lexer():
     def t_PERCENT(self,t):
         r'\%'
         return t
+
     def t_FOREACH(self,t):
         r'foreach(?!\w)'
         return t
@@ -124,9 +128,6 @@ class Lexer():
         return t
     def t_MAIN(self,t):
         r'main(?!\w)'
-        return t
-    def t_POINT(self,t):
-        r'\.'
         return t
 
     def t_TOP(self, t):
@@ -173,10 +174,6 @@ class Lexer():
         t.lexer.lineno += t.value.count('\n')
         return t
 
-    def t_UNKNOWN(self, t):
-        r'.+'
-        return t
-
     def t_error(self, t):
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(len(t.value))
@@ -191,9 +188,10 @@ class Lexer():
 
 
 if __name__ == '__main__':
-    f = open('sort')
+    f = open('foreach')
     data = f.read()
     f.close()
+    #data='n=sort(&A,sizeof(A));\n'
     lexer = Lexer()
     lexer.test(data)
 

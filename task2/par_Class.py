@@ -92,6 +92,7 @@ class Parser():
                     | function NL
                     | operator  NL
                     | RETURN expression SEMICOLON
+                    | foreach SEMICOLON NL
                     | empty NL'''
         if p[1]=='return':
             p[0] = SyntaxTreeNode('return', children=p[2], lineno=p.lineno(1))
@@ -165,13 +166,11 @@ class Parser():
 
     def p_pointer(self, p):
         '''pointer : STAR NAME
-                  | STAR OBRACKET expression CBRACKET
-                  | AMPERSAND NAME
-                  | AMPERSAND OBRACKET expression CBRACKET'''
+                  | STAR OBRACKET expression CBRACKET'''
         if len(p) == 5:
             p[0] = SyntaxTreeNode('pointer_variable', children=p[3])
         else:
-            p[0] = SyntaxTreeNode('pointer_variable', children=[SyntaxTreeNode('name', value=p[2], lineno=p.lineno(2))])
+            p[0] = SyntaxTreeNode('pointer_variable', children=SyntaxTreeNode('name',value=p[2]))
 
     def p_variable(self, p):
         '''variable : NAME
@@ -277,7 +276,7 @@ class Parser():
         if len(p)==3:
             p[0] = SyntaxTreeNode('operator', p[1], lineno=p.lineno(1))
         else:
-            p[0] = SyntaxTreeNode('operator', p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+            p[0] = SyntaxTreeNode('operator', p[1], children=p[2], lineno=p.lineno(1))
 
 
     def p_while_finish(self, p):
@@ -327,12 +326,24 @@ class Parser():
                      | NAME'''
         p[0] = p[1]
 
+    def p_foreach(self,p):
+        '''foreach : FOREACH NAME function_call'''
+        p[0]=SyntaxTreeNode('foreach',p[2],children=p[3],lineno=p.lineno(1))
+
+    def p_foreach_error(self,p):
+        'foreach : FOREACH error'
+        p[0] = SyntaxTreeNode('error', value="Wrong foreach", lineno=p.lineno(1))
+        sys.stderr.write(f'>>> Wrong foreach type\n')
+        self.ok=False
+
+
     def p_function_call(self, p):
         'function_call : NAME OBRACKET call_parameters CBRACKET '
-        p[0] = SyntaxTreeNode('function_call', p[1], children={'parametrs':p[3]}, lineno=p.lineno(1),)
+        p[0] = SyntaxTreeNode('function_call', p[1], children={'parametrs':p[3]}, lineno=p.lineno(1))
 
     def p_call_parameters(self,p):
-       '''call_parameters : call_parameters COMMA expression
+       '''call_parameters :
+                | call_parameters COMMA expression
                 | expression'''
        if len(p) == 2:
            p[0] = SyntaxTreeNode('call parameters', children=p[1], lineno=p.lineno(1))
@@ -363,14 +374,14 @@ class Parser():
 
     def p_error(self,p):
         if not p:
-            print(f'Syntax error at {p.lineno} line\n')
+            print(f'Syntax error \n')
             self.ok = False
 
 
 
 if __name__ == '__main__':
     parser = Parser()
-    f=open('sort','r')
+    f=open('foreach','r')
     txt=f.read()
     f.close()
     tree, functions,ok = parser.parse(txt)
