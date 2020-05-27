@@ -127,7 +127,7 @@ class MyInterpreter:
 
         # for array assignment
         elif node.type == 'index':
-            return self._index(node)
+            return self._index(self.symbol_table[self.scope][node.value.value],node.children)
         # binary operations
         elif node.type == 'bin_op':
             exp1=node.children[0]
@@ -171,7 +171,7 @@ class MyInterpreter:
             if node.value in self.symbol_table[self.scope]:
                 if self.symbol_table[self.scope][node.value].value==None:
                     sys.stderr.write(f'Cant get value of {node.value}')
-                    return None
+                    raise Exit
                 else:
                    return self.symbol_table[self.scope][node.value]
         #creat Value num from number node for operations
@@ -325,13 +325,13 @@ class MyInterpreter:
                 elif node.children[1].type != 'num' and node.children[1].type != 'name':
                     val = self.interpreter_node(node.children[1])
                     if self.flagOperation == True:
-                        if val.type == 'pointer':
+                        if val._type() == 'pointer':
                             if self.symbol_table[self.scope][node.children[0].value]._type() == 'pointer':
                                 self.symbol_table[self.scope][node.children[0].value] = val
                             else:
                                 sys.stderr.write(f'Time error\n')
                                 self.symbol_table[self.scope].pop(node.children[0].value)
-                        elif val.type == 'num':
+                        elif val._type() == 'Value':
                             if self.symbol_table[self.scope][node.children[0].value]._type() == 'Value':
                                 self.symbol_table[self.scope][node.children[0].value] = Value(val.type,val.value)
                             elif self.symbol_table[self.scope][node.children[0].value]._type() == 'Array':
@@ -364,7 +364,11 @@ class MyInterpreter:
             else:
                 var=self.symbol_table[self.scope][variable.children.value]
             exp=self.interpreter_node(expression)
-            self.symbol_table[var.level][var.value].value[var.index]=copy.copy(exp)
+            vv=self.symbol_table[var.level][var.value]
+            if vv._type()=='Value' or vv._type()=='pointer':
+                vv.value=copy.copy(exp)
+            elif vv._type()=='Array':
+                vv.value[var.index]=copy.copy(exp)
             return
         elif variable.type=='index':
             if variable.value.value in self.symbol_table[self.scope].keys():
@@ -1060,7 +1064,7 @@ class MyInterpreter:
 
 
 if __name__ == '__main__':
-    f=open('sort','r')
+    f=open('factorial', 'r')
     txt=f.read()
     f.close()
     #txt='value b=4;\n pointer a=&b;\nb=2;\nvalue c=*a;\n'

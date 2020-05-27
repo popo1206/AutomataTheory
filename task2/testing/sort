@@ -1,5 +1,4 @@
-value sort(pointer array of A,value N)
-{
+value sort(pointer array of  A,value N){
     value i=0;
     value j=N-2;
     value c;
@@ -11,18 +10,21 @@ value sort(pointer array of A,value N)
                     *(A+j+1)=c;
                     }
                 j=j-1;
-            }
+                }
             i=i+1;
-        }
+            j=N-2;
+            }
     return 1;
 }
 
-value main()
-{
+value main(){
     value n;
-    array of value A;
+    array of A;
 	A[0]=1;
 	A[1]=5;
-    n=sort(&A[0],sizeof(A));
+	A[2]=3;
+	A[3]=5;
+    n=sort(&A,sizeof(A));
     return 1;
 }
+
