@@ -1,0 +1,30 @@
+value algorithm(value n){
+teleport;
+portal;
+notzero? (left){
+portal;
+right;
+}
+notzero? (right){
+portal;
+left;
+}
+notzero? (bottom){
+portal;
+top;
+}
+notzero? (top){
+portal;
+bottom;
+}
+n=algorithm(n);
+return 1;
+}
+value main(){
+portal;
+value n=1;
+n=algorithm(n);
+return 1;
+}
+
+

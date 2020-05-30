@@ -90,7 +90,7 @@ class Parser():
                     | while NL
                     | zero  NL
                     | function NL
-                    | operator  NL
+                    | operator SEMICOLON NL
                     | RETURN expression SEMICOLON
                     | foreach SEMICOLON NL
                     | empty NL'''
@@ -108,7 +108,7 @@ class Parser():
                     | operator error
                     | RETURN expression error'''
         p[0] = SyntaxTreeNode('error', value="Wrong statement", lineno=p.lineno(1))
-        sys.stderr.write(f'>>> Syntax error\n')
+        sys.stderr.write(f'>>> Wrong statement\n')
         self.ok=False
 
     # it's ok type+ some variable
@@ -163,6 +163,7 @@ class Parser():
         '''assignment : variable ASSIGNMENT error'''
         p[0] = SyntaxTreeNode('error', value="Wrong assignment", lineno=p.lineno(1))
         sys.stderr.write(f'>>> Wrong assignment\n')
+        self.ok=False
 
     def p_pointer(self, p):
         '''pointer : STAR NAME
@@ -235,6 +236,7 @@ class Parser():
         '''expression : variable
         | al_expression
         | function_call
+        | operator
         | SIZEOF OBRACKET variable CBRACKET'''
         if len(p)==2:
             p[0] = p[1]
@@ -265,15 +267,15 @@ class Parser():
         p[0] = p[2]
 
     def p_operator(self, p):
-        '''operator : TOP SEMICOLON
-        | BOTTOM SEMICOLON
-        | LEFT SEMICOLON
-        | RIGHT SEMICOLON
-        | PORTAL SEMICOLON
-        | TELEPORT SEMICOLON
-        | BREAK SEMICOLON
+        '''operator : TOP
+        | BOTTOM
+        | LEFT
+        | RIGHT
+        | PORTAL
+        | TELEPORT
+        | BREAK
         | SIZEOF OBRACKET al_expression CBRACKET'''
-        if len(p)==3:
+        if len(p)==2:
             p[0] = SyntaxTreeNode('operator', p[1], lineno=p.lineno(1))
         else:
             p[0] = SyntaxTreeNode('operator', p[1], children=p[2], lineno=p.lineno(1))
@@ -290,6 +292,13 @@ class Parser():
         '''while : WHILE OBRACKET expression CBRACKET  OFBRACKET  NL stategroup  CFBRACKET'''
         p[0] = SyntaxTreeNode('while', children={'condition': p[3], 'body': p[7]}, lineno=p.lineno(1))
 
+    def p_while_error(self,p):
+        '''while : WHILE error'''
+        p[0]= SyntaxTreeNode('error', value="Wrong while", lineno=p.lineno(1))
+        sys.stderr.write(f'>>> Wrong while\n')
+        self.ok=False
+
+
 
 
     def p_zero(self,p):
@@ -303,6 +312,13 @@ class Parser():
         else:
             p[0] = SyntaxTreeNode(p[1], children={'condition': p[3], 'body': p[6]}, lineno=p.lineno(1))
 
+    def p_zero_error(self,p):
+        ''' zero : ZERO error
+        | NOTZERO error
+        '''
+        p[0] = SyntaxTreeNode('error', value="Wrong zero", lineno=p.lineno(1))
+        sys.stderr.write(f'>>> Wrong zero\n')
+        self.ok = False
 
     def p_function(self, p):
         '''function : type funcname OBRACKET parameters CBRACKET  OFBRACKET  NL stategroup  CFBRACKET
@@ -319,6 +335,12 @@ class Parser():
                 self.functions[p[2]]=SyntaxTreeNode('function', children={'type': p[1], 'parametrs': None, 'body': p[7]})
                 p[0]=SyntaxTreeNode('function_description', value=p[2])
 
+    def p_function_error(self,p):
+        '''function : type funcname error'''
+        p[0] = SyntaxTreeNode('error', value="Wrong function", lineno=p.lineno(1))
+        sys.stderr.write(f'>>> Wrong function \n')
+        self.ok=False
+
 
 
     def p_funcname(self, p):
@@ -332,9 +354,8 @@ class Parser():
 
     def p_foreach_error(self,p):
         'foreach : FOREACH error'
-        p[0] = SyntaxTreeNode('error', value="Wrong foreach", lineno=p.lineno(1))
         sys.stderr.write(f'>>> Wrong foreach type\n')
-        self.ok=False
+        self.ok = False
 
 
     def p_function_call(self, p):
@@ -381,7 +402,7 @@ class Parser():
 
 if __name__ == '__main__':
     parser = Parser()
-    f=open('foreach','r')
+    f=open('algorithm', 'r')
     txt=f.read()
     f.close()
     tree, functions,ok = parser.parse(txt)
@@ -390,7 +411,6 @@ if __name__ == '__main__':
         tree.print()
         print(functions)
         functions['main'].print()
-        functions['factorial'].print()
     else:
         print('error tree built')
 

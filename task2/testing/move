@@ -1,0 +1,12 @@
+value main(){
+right;
+portal;
+right;
+bottom;
+bottom;
+bottom;
+left;
+teleport;
+top;
+return 1;
+}

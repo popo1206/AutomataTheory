@@ -1,10 +1,12 @@
 value factorial (value a){
-    notzero? (a!=0){
-        return a*factorial(a-1);
+    notzero? (a<=0){
+    return 1;
     }
-    zero? (a){
-        return 1;
-        }
+    notzero? (a!=0){
+        return a*factorial(a-1)*factorial(a-1);
+
+    }
+
 }
 
 value main(){

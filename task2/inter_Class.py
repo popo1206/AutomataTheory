@@ -4,6 +4,7 @@ import copy
 from par_Class import SyntaxTreeNode
 import math
 import random
+from robot_class import Robot, Cell,types
 
 
 class Exit(Exception):
@@ -72,6 +73,8 @@ class MyInterpreter:
         self.scope = 0
         self.flagOperation=True
         self.correct=None
+        self.find_exit = False
+        self.robot = Robot()
 
 
 
@@ -99,8 +102,14 @@ class MyInterpreter:
 
     def interpreter_node(self, node):
         self.type.clear()
-        if node is None:
-            return Exit
+
+        if self.robot.found_exit:
+            raise Exit
+        elif '#result' in self.symbol_table[self.scope].keys():
+            return
+
+        elif node is None:
+            raise Exit
         #program
         elif node.type == 'program':
             self.interpreter_node(node.children)
@@ -182,20 +191,21 @@ class MyInterpreter:
        # statement -> return operation
         elif node.type == 'return':
             self.symbol_table[self.scope]['#result'] = self.interpreter_node(node.children)
+            return
         #robot operations and sizeof and break
         elif node.type == 'operator':
             if node.value.lower() == 'top':
-                return self._top(node.children)
+                return Value('num',self.robot.move_top())
             elif node.value.lower() == 'bottom':
-                return self._bottom(node.children)
+                return Value('num',self.robot.move_bottom())
             elif node.value.lower() == 'left':
-                return self._left()
+                return Value ('num',self.robot.move_left())
             elif node.value.lower() == 'right':
-                return self._right()
+                return Value('num',self.robot.move_right())
             elif node.value.lower() == 'portal':
-                return self._portal(node.children)
+                self.robot.portal()
             elif node.value.lower() == 'teleport':
-                return self._drop(node.children)
+                 self.robot.teleport()
             elif node.value.lower() == 'sizeof':
                 return self._sizeof(node.children)
             elif node.value.lower() == 'break':
@@ -950,6 +960,21 @@ class MyInterpreter:
             if condition == 0:
                 self.interpreter_node(node.children['body'])
 
+    # FOREACH BLOCK
+    def _foreach(self, node: SyntaxTreeNode):
+        if node.value in self.symbol_table[self.scope].keys():
+            if self.symbol_table[self.scope][node.value]._type() == 'Array':
+                k = 0
+                for i in self.symbol_table[self.scope][node.value].value:
+                    self.symbol_table[self.scope][node.value].value[k] = self._function_call(node.children, True, i)
+                    k += 1
+            else:
+                self.symbol_table[self.scope][node.value] = self._function_call(node.children, True,
+                                                                                self.symbol_table[self.scope][
+                                                                                    node.value])
+        else:
+            sys.stderr.write('Error variable in foreach\n')
+
     #FUNCTION BLOCK
 
 
@@ -959,17 +984,7 @@ class MyInterpreter:
         except Exit:
             pass
 
-    def _foreach(self,node :SyntaxTreeNode):
-        if node.value in self.symbol_table[self.scope].keys():
-            if self.symbol_table[self.scope][node.value]._type()=='Array':
-                k=0
-                for i in self.symbol_table[self.scope][node.value].value:
-                   self.symbol_table[self.scope][node.value].value[k]=self._function_call(node.children, True, i)
-                   k+=1
-            else:
-                self.symbol_table[self.scope][node.value]=self._function_call(node.children, True, self.symbol_table[self.scope][node.value])
-        else:
-            sys.stderr.write('Error variable in foreach\n')
+
 
 
     def _function_call(self, node: SyntaxTreeNode,flag=False, each=0):
@@ -1077,17 +1092,45 @@ class MyInterpreter:
             sys.stderr.write("Size of error\n")
             return
 
+
     def print_symbol(self):
         print(self.symbol_table)
+
+    def create_robot(self,name):
+        fl = open(name)
+        _text = fl.readlines()
+        robot_info = _text.pop(0).rstrip().split(" ")
+        map_size = _text.pop(0).rstrip().split(" ")
+
+        # robot set
+        x = int(robot_info[0])
+        y = int(robot_info[1])
+        _map = [0] * int(map_size[0])
+
+        for i in range(int(map_size[0])):
+            _map[i] = [0] * int((map_size[1]))
+        for i in range(int(map_size[0])):
+            for j in range(int(map_size[1])):
+                _map[i][j] = Cell("EMPTY")
+        pos = 0
+        for i in range(int(map_size[0])):
+            line = list(_text.pop(0).rstrip())
+            line = [Cell(types[i]) for i in line]
+            _map[pos] = line
+            pos += 1
+        self.robot = Robot(_x=x, _y=y, _map=_map)
 
 
 
 if __name__ == '__main__':
-    f=open('foreach', 'r')
+    f=open('algorithm', 'r')
     txt=f.read()
     f.close()
     #txt='value b=4;\n pointer a=&b;\nb=2;\nvalue c=*a;\n'
     interpr=MyInterpreter()
+
+    interpr.create_robot()
+    interpr.robot.show()
     interpr.interpreter(prog=txt)
     interpr.print_symbol()
 
