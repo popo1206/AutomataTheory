@@ -380,7 +380,7 @@ class MyInterpreter:
             exp=self.interpreter_node(expression)
             vv=self.symbol_table[var.level][var.value]
             if vv._type()=='Value' or vv._type()=='pointer':
-                vv.value=copy.copy(exp)
+                vv.value=copy.deepcopy(exp)
             elif vv._type()=='Array':
                 vv.value[var.index]=copy.copy(exp)
             return
@@ -408,7 +408,7 @@ class MyInterpreter:
               raise Exit
            elif (tab._type()=='Value' and (self.symbol_table[self.scope][expression.value]._type()=='Value'))\
                         or (tab._type()=='pointer' and (self.symbol_table[self.scope][expression.value]._type()=='pointer')):
-                    tab=self.symbol_table[self.scope][expression.value]
+                    tab=copy.copy(self.symbol_table[self.scope][expression.value])
            elif (tab._type()=='Array') and (self.symbol_table[self.scope][expression.value]._type()=='Array'):
                tab.value=copy.deepcopy(self.symbol_table[self.scope][expression.value].value)
            else:
@@ -569,6 +569,11 @@ class MyInterpreter:
                     val=exp1.index+val2
                     arr=self.symbol_table[exp1.level][exp1.value]
                     if len(arr.value) > val:
+                        ttype = copy.copy(arr.type)
+                        ttype.insert(0, 'pointer')
+                        return Pointer(ttype, exp1.value, index=val)
+                    elif len(arr.value) == val:
+                        arr.value.append(Value('num'))
                         ttype = copy.copy(arr.type)
                         ttype.insert(0, 'pointer')
                         return Pointer(ttype, exp1.value, index=val)
@@ -818,7 +823,7 @@ class MyInterpreter:
         else:
             #FOR VALUE
             if (type1=='Value' or type1=='num') and  (type2=='Value' or type2=='num'):
-                    return Value('num',val1 % val2)
+                    return Value('num',int(val1 % val2))
             #FOR POINTER
             elif (type1=='pointer') or (type2=='pointer'):
                 sys.stderr.write('Cant % with type pointer\n')
@@ -931,7 +936,7 @@ class MyInterpreter:
         while True:
             try:
                 condition = self.interpreter_node(node.children['condition']).value
-                if condition == 1:
+                if condition >= 1:
                     self.interpreter_node(node.children['body'])
                 else:
                     break
@@ -1068,7 +1073,7 @@ class MyInterpreter:
             if value == None:
                 sys.stderr.write('Error parametrs\n')
             else:
-                vars.append(value)
+                vars.append(copy.copy(value))
         else:
             if node.type == 'call parameters':
                 self._parametrs(node.children, vars)
@@ -1077,7 +1082,7 @@ class MyInterpreter:
                 if value == None:
                     sys.stderr.write('Error parametrs\n')
                 else:
-                    vars.append(value)
+                    vars.append(copy.copy(value))
 
     #OPERATORS BLOCK
     def _sizeof(self, node :SyntaxTreeNode):

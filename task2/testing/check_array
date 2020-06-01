@@ -3,6 +3,11 @@ array of a;
 a[0]=1;
 a[1]=2;
 a[2]=3;
+value i=3;
+while (i!=4){
+a[i]=i+0;
+i=i+1;
+}
 array of array of b;
 b[0]=a;
 a[1]=b[0][1];

@@ -2,7 +2,6 @@ from par_Class import SyntaxTreeNode
 import sys
 from time import sleep
 def clear():
-    sleep(0.1)
     print('\n'*10)
 
 types = {' ': 'FLOOR',
@@ -98,8 +97,8 @@ class Robot:
 
     def portal(self):
         coord=(self.x,self.y)
-        if coord not in self.portals:
-            self.portals.insert(0,coord)
+        self.portals.insert(0,coord)
+
 
     def teleport(self):
         coord=self.portals.pop(0)

@@ -3,7 +3,7 @@ value factorial (value a){
     return 1;
     }
     notzero? (a!=0){
-        return a*factorial(a-1)*factorial(a-1);
+        return a*factorial(a-1)*factorial(a-2)*factorial(a-3);
 
     }
 
